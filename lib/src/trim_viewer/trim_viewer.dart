@@ -96,6 +96,18 @@ class TrimViewer extends StatefulWidget {
   /// thumbnails are loaded.
   final VoidCallback? onThumbnailLoadingComplete;
 
+  /// For specifying the scroll start delay of the timeline
+  /// when dragging the trim editor in milliseconds.
+  ///
+  /// By default it is set to `300`
+  final int scrollStartDelay;
+
+  /// For specifying the scrolling delay of the timeline
+  /// when dragging the trim editor in milliseconds.
+  ///
+  /// By default it is set to `300`
+  final int scrollingDelay;
+
   /// Widget for displaying the video trimmer.
   ///
   /// This has frame wise preview of the video with a
@@ -177,6 +189,17 @@ class TrimViewer extends StatefulWidget {
   /// * [onThumbnailLoadingComplete] is a callback for thumbnail loader to
   /// know when all the thumbnails are loaded.
   ///
+  ///
+  /// * [scrollStartDelay] For specifying the scroll start delay of the timeline
+  /// when dragging the trim editor in milliseconds.
+  /// By default it is set to `300`.
+  ///
+  ///
+  /// * [scrollingDelay]  For specifying the scrolling delay of the timeline
+  /// when dragging the trim editor in milliseconds.
+  ///
+  /// By default it is set to `300`
+  ///
   const TrimViewer({
     super.key,
     required this.trimmer,
@@ -195,6 +218,8 @@ class TrimViewer extends StatefulWidget {
     this.editorProperties = const TrimEditorProperties(),
     this.areaProperties = const TrimAreaProperties(),
     this.onThumbnailLoadingComplete,
+    this.scrollStartDelay = 300,
+    this.scrollingDelay = 300,
   });
 
   @override
@@ -246,6 +271,8 @@ class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
       paddingFraction: widget.paddingFraction,
       editorProperties: widget.editorProperties,
       areaProperties: widget.areaProperties,
+      scrollStartDelay: widget.scrollStartDelay,
+      scrollingDelay: widget.scrollingDelay,
       onThumbnailLoadingComplete: () {
         if (widget.onThumbnailLoadingComplete != null) {
           widget.onThumbnailLoadingComplete!();

@@ -78,6 +78,12 @@ class ScrollableTrimViewer extends StatefulWidget {
 
   final VoidCallback onThumbnailLoadingComplete;
 
+  /// For defining the delay in milliseconds before starting the scrolling.
+  final int scrollStartDelay;
+
+  /// For defining the delay in milliseconds between the scrolling steps.
+  final int scrollingDelay;
+
   /// Widget for displaying the video trimmer.
   ///
   /// This has frame wise preview of the video with a
@@ -121,12 +127,19 @@ class ScrollableTrimViewer extends StatefulWidget {
   ///
   /// * [areaProperties] defines properties for customizing the trim area.
   ///
+  ///
+  /// * [scrollStartDelay] for defining the delay in milliseconds before starting the scrolling.
+  ///
+  /// * [scrollingDelay] for defining the delay in milliseconds between the scrolling steps.
+  ///
   const ScrollableTrimViewer({
     super.key,
     required this.trimmer,
     required this.maxVideoLength,
     required this.minVideoLength,
     required this.onThumbnailLoadingComplete,
+    required this.scrollStartDelay,
+    required this.scrollingDelay,
     this.viewerWidth = 50 * 8,
     this.viewerHeight = 50,
     this.showDuration = true,
@@ -210,7 +223,7 @@ class _ScrollableTrimViewerState extends State<ScrollableTrimViewer>
 
   void startScrolling(bool isTowardsEnd) {
     _scrollingTimer =
-        Timer.periodic(const Duration(milliseconds: 300), (timer) {
+        Timer.periodic(Duration(milliseconds: widget.scrollingDelay), (timer) {
       setState(() {
         final midPoint = (_endPos.dx - _startPos.dx) / 2;
         var speedMultiplier = 1;
@@ -267,20 +280,23 @@ class _ScrollableTrimViewerState extends State<ScrollableTrimViewer>
     setState(() {});
   }
 
-  void startTimer(bool isTowardsEnd) {
-    var start = 300;
+    void startTimer(bool isTowardsEnd) {
+    var remainingDelay = widget.scrollStartDelay;
+    void attemptStartScroll() {
+      if (remainingDelay <= 0) {
+        _scrollStartTimer?.cancel();
+        log('ANIMATE');
+        if (!(_scrollingTimer?.isActive ?? false)) {
+          startScrolling(isTowardsEnd);
+        }
+      } else {
+        remainingDelay -= 100;
+      }
+    }
+    attemptStartScroll();
     _scrollStartTimer = Timer.periodic(
       const Duration(milliseconds: 100),
-      (Timer timer) {
-        if (start == 0) {
-          timer.cancel();
-          log('ANIMATE');
-          if (_scrollingTimer?.isActive ?? false) return;
-          startScrolling(isTowardsEnd);
-        } else {
-          start -= 100;
-        }
-      },
+      (_) => attemptStartScroll(),
     );
   }
 
