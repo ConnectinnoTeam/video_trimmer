@@ -172,6 +172,9 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   Animation<double>? _scrubberAnimation;
   AnimationController? _animationController;
   late Tween<double> _linearTween;
+  VoidCallback? _videoPlayerListener;
+  VoidCallback? _animationListener;
+  AnimationStatusListener? _animationStatusListener;
 
   /// Quick access to VideoPlayerController, only not null after [TrimmerEvent.initialized]
   /// has been emitted.
@@ -256,22 +259,27 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
               Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt()),
         );
 
-        _scrubberAnimation = _linearTween.animate(_animationController!)
-          ..addListener(() {
+        _scrubberAnimation = _linearTween.animate(_animationController!);
+        _animationListener = () {
+          if (mounted) {
             setState(() {});
-          })
-          ..addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              _animationController!.stop();
-            }
-          });
+          }
+        };
+        _animationStatusListener = (status) {
+          if (status == AnimationStatus.completed) {
+            _animationController!.stop();
+          }
+        };
+        _scrubberAnimation!.addListener(_animationListener!);
+        _scrubberAnimation!.addStatusListener(_animationStatusListener!);
       });
     });
   }
 
   Future<void> _initializeVideoController() async {
     if (_videoFile != null) {
-      videoPlayerController.addListener(() {
+      _videoPlayerListener = () {
+        if (!mounted) return;
         final bool isPlaying = videoPlayerController.value.isPlaying;
 
         if (isPlaying) {
@@ -303,7 +311,8 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
             }
           }
         }
-      });
+      };
+      videoPlayerController.addListener(_videoPlayerListener!);
 
       videoPlayerController.setVolume(1.0);
       _videoDuration = videoPlayerController.value.duration.inMilliseconds;
@@ -421,11 +430,29 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   void dispose() {
     videoPlayerController.pause();
     widget.onChangePlaybackState!(false);
-    if (_videoFile != null) {
-      videoPlayerController.setVolume(0.0);
-      videoPlayerController.dispose();
-      widget.onChangePlaybackState!(false);
+
+    // Remove video player listener
+    if (_videoPlayerListener != null) {
+      videoPlayerController.removeListener(_videoPlayerListener!);
+      _videoPlayerListener = null;
     }
+
+    // Remove animation listeners and dispose animation controller
+    if (_scrubberAnimation != null) {
+      if (_animationListener != null) {
+        _scrubberAnimation!.removeListener(_animationListener!);
+      }
+      if (_animationStatusListener != null) {
+        _scrubberAnimation!.removeStatusListener(_animationStatusListener!);
+      }
+    }
+
+    _animationController?.dispose();
+    _animationController = null;
+
+    // Note: VideoPlayerController is owned by Trimmer, not this widget
+    // Do not dispose it here
+
     super.dispose();
   }
 

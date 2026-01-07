@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
@@ -99,13 +101,13 @@ class TrimViewer extends StatefulWidget {
   /// For specifying the scroll start delay of the timeline
   /// when dragging the trim editor in milliseconds.
   ///
-  /// By default it is set to `300`
+  /// By default it is set to `100`
   final int scrollStartDelay;
 
   /// For specifying the scrolling delay of the timeline
   /// when dragging the trim editor in milliseconds.
   ///
-  /// By default it is set to `300`
+  /// By default it is set to `100`
   final int scrollingDelay;
 
   /// Widget for displaying the video trimmer.
@@ -192,13 +194,13 @@ class TrimViewer extends StatefulWidget {
   ///
   /// * [scrollStartDelay] For specifying the scroll start delay of the timeline
   /// when dragging the trim editor in milliseconds.
-  /// By default it is set to `300`.
+  /// By default it is set to `100`.
   ///
   ///
   /// * [scrollingDelay]  For specifying the scrolling delay of the timeline
   /// when dragging the trim editor in milliseconds.
   ///
-  /// By default it is set to `300`
+  /// By default it is set to `100`
   ///
   const TrimViewer({
     super.key,
@@ -218,8 +220,8 @@ class TrimViewer extends StatefulWidget {
     this.editorProperties = const TrimEditorProperties(),
     this.areaProperties = const TrimAreaProperties(),
     this.onThumbnailLoadingComplete,
-    this.scrollStartDelay = 300,
-    this.scrollingDelay = 300,
+    this.scrollStartDelay = 100,
+    this.scrollingDelay = 100,
   });
 
   @override
@@ -228,11 +230,12 @@ class TrimViewer extends StatefulWidget {
 
 class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
   bool? _isScrollableAllowed;
+  StreamSubscription<TrimmerEvent>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
-    widget.trimmer.eventStream.listen((event) {
+    _eventSubscription = widget.trimmer.eventStream.listen((event) {
       if (event == TrimmerEvent.initialized) {
         final totalDuration =
             widget.trimmer.videoPlayerController!.value.duration;
@@ -252,6 +255,12 @@ class _TrimViewerState extends State<TrimViewer> with TickerProviderStateMixin {
         setState(() => _isScrollableAllowed = shouldScroll);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _eventSubscription?.cancel();
+    super.dispose();
   }
 
   @override
