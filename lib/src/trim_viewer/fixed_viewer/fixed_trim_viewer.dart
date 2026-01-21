@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -189,6 +188,11 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   /// of the frame, to make the UI more realistic.
   bool _allowDrag = true;
 
+  /// Store the video start and end positions before drag starts
+  /// Used to check if values actually changed after drag
+  double _videoStartPosBeforeDrag = 0.0;
+  double _videoEndPosBeforeDrag = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -196,19 +200,15 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
     _endCircleSize = widget.editorProperties.circleSize;
     _borderRadius = widget.editorProperties.borderRadius;
     _thumbnailViewerH = widget.viewerHeight;
-    log('thumbnailViewerW: $_thumbnailViewerW');
     SchedulerBinding.instance.addPostFrameCallback((_) {
       final renderBox =
           _trimmerAreaKey.currentContext?.findRenderObject() as RenderBox?;
       final trimmerActualWidth = renderBox?.size.width;
-      log('RENDER BOX: $trimmerActualWidth');
       if (trimmerActualWidth == null) return;
       _thumbnailViewerW = trimmerActualWidth;
       _initializeVideoController();
       videoPlayerController.seekTo(const Duration(milliseconds: 0));
       _numberOfThumbnails = trimmerActualWidth ~/ _thumbnailViewerH;
-      log('numberOfThumbnails: $_numberOfThumbnails');
-      log('thumbnailViewerW: $_thumbnailViewerW');
       setState(() {
         _thumbnailViewerW = _numberOfThumbnails * _thumbnailViewerH;
 
@@ -322,10 +322,9 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   /// Called when the user starts dragging the frame, on either side on the whole frame.
   /// Determine which [EditorDragType] is used.
   void _onDragStart(DragStartDetails details) {
-    debugPrint("_onDragStart");
-    debugPrint(details.localPosition.toString());
-    debugPrint((_startPos.dx - details.localPosition.dx).abs().toString());
-    debugPrint((_endPos.dx - details.localPosition.dx).abs().toString());
+    // Store the current video positions before drag starts
+    _videoStartPosBeforeDrag = _videoStartPos;
+    _videoEndPosBeforeDrag = _videoEndPos;
 
     final startDifference = _startPos.dx - details.localPosition.dx;
     final endDifference = _endPos.dx - details.localPosition.dx;
@@ -336,7 +335,6 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
         endDifference >= -widget.editorProperties.sideTapSize) {
       _allowDrag = true;
     } else {
-      debugPrint("Dragging is outside of frame, ignoring gesture...");
       _allowDrag = false;
       return;
     }
@@ -392,6 +390,10 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   }
 
   void _onStartDragged() {
+    if (_thumbnailViewerW <= 0) {
+      return;
+    }
+
     _startFraction = (_startPos.dx / _thumbnailViewerW);
     _videoStartPos = _videoDuration * _startFraction;
     widget.onChangeStart!(_videoStartPos);
@@ -402,6 +404,10 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   }
 
   void _onEndDragged() {
+    if (_thumbnailViewerW <= 0) {
+      return;
+    }
+
     _endFraction = _endPos.dx / _thumbnailViewerW;
     _videoEndPos = _videoDuration * _endFraction;
     widget.onChangeEnd!(_videoEndPos);
@@ -413,16 +419,41 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
 
   /// Drag gesture ended, update UI accordingly.
   void _onDragEnd(DragEndDetails details) {
+    // Check if trim values actually changed during drag
+    final bool trimValuesChanged =
+        (_videoStartPos != _videoStartPosBeforeDrag) ||
+            (_videoEndPos != _videoEndPosBeforeDrag);
+
+    // Only seek if trim values actually changed
+    if (trimValuesChanged) {
+      // Temporarily remove listener to prevent interference during seek
+      if (_videoPlayerListener != null) {
+        videoPlayerController.removeListener(_videoPlayerListener!);
+      }
+
+      // Seek video to start position and wait for it to complete
+      videoPlayerController
+          .seekTo(Duration(milliseconds: _videoStartPos.toInt()))
+          .then((_) {
+        // Re-add the listener after seek completes
+        if (_videoPlayerListener != null) {
+          videoPlayerController.addListener(_videoPlayerListener!);
+        }
+
+        if (mounted) {
+          setState(() {});
+        }
+      }).catchError((error) {
+        // Re-add listener even if seek fails
+        if (_videoPlayerListener != null) {
+          videoPlayerController.addListener(_videoPlayerListener!);
+        }
+      });
+    }
+
     setState(() {
       _startCircleSize = widget.editorProperties.circleSize;
       _endCircleSize = widget.editorProperties.circleSize;
-      if (_dragType == EditorDragType.right) {
-        videoPlayerController
-            .seekTo(Duration(milliseconds: _videoEndPos.toInt()));
-      } else {
-        videoPlayerController
-            .seekTo(Duration(milliseconds: _videoStartPos.toInt()));
-      }
     });
   }
 
