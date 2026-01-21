@@ -283,18 +283,18 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
         final bool isPlaying = videoPlayerController.value.isPlaying;
 
         if (isPlaying) {
-          widget.onChangePlaybackState!(true);
+          widget.onChangePlaybackState?.call(true);
           setState(() {
             _currentPosition =
                 videoPlayerController.value.position.inMilliseconds;
 
             if (_currentPosition > _videoEndPos.toInt()) {
               videoPlayerController.pause();
-              widget.onChangePlaybackState!(false);
+              widget.onChangePlaybackState?.call(false);
               _animationController!.stop();
             } else {
               if (!_animationController!.isAnimating) {
-                widget.onChangePlaybackState!(true);
+                widget.onChangePlaybackState?.call(true);
                 _animationController!.forward();
               }
             }
@@ -307,7 +307,7 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
                 _animationController!.reset();
               }
               _animationController!.stop();
-              widget.onChangePlaybackState!(false);
+              widget.onChangePlaybackState?.call(false);
             }
           }
         }

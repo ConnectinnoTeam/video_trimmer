@@ -429,18 +429,18 @@ class _ScrollableTrimViewerState extends State<ScrollableTrimViewer>
       final bool isPlaying = videoPlayerController.value.isPlaying;
 
       if (isPlaying) {
-        widget.onChangePlaybackState!(true);
+        widget.onChangePlaybackState?.call(true);
         setState(() {
           _currentPosition =
               videoPlayerController.value.position.inMilliseconds;
 
           if (_currentPosition > _videoEndPos.toInt()) {
             videoPlayerController.pause();
-            widget.onChangePlaybackState!(false);
+            widget.onChangePlaybackState?.call(false);
             _animationController!.stop();
           } else {
             if (!_animationController!.isAnimating) {
-              widget.onChangePlaybackState!(true);
+              widget.onChangePlaybackState?.call(true);
               _animationController!.forward();
             }
           }
@@ -453,7 +453,7 @@ class _ScrollableTrimViewerState extends State<ScrollableTrimViewer>
               _animationController!.reset();
             }
             _animationController!.stop();
-            widget.onChangePlaybackState!(false);
+            widget.onChangePlaybackState?.call(false);
           }
         }
       }
@@ -602,7 +602,7 @@ class _ScrollableTrimViewerState extends State<ScrollableTrimViewer>
     _scrollController.dispose();
     _scrollStartTimer?.cancel();
     _scrollingTimer?.cancel();
-    widget.onChangePlaybackState!(false);
+    widget.onChangePlaybackState?.call(false);
 
     // Remove video player listener
     if (_videoPlayerListener != null) {
