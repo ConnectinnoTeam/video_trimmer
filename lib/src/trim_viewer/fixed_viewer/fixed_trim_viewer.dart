@@ -429,7 +429,7 @@ class _FixedTrimViewerState extends State<FixedTrimViewer>
   @override
   void dispose() {
     videoPlayerController.pause();
-    widget.onChangePlaybackState!(false);
+    widget.onChangePlaybackState?.call(false);
 
     // Remove video player listener
     if (_videoPlayerListener != null) {
