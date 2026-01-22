@@ -47,7 +47,7 @@ class TrimEditorProperties {
   /// Determines the touch size of the side handles, left and right. The rest, in
   /// the center, will move the whole frame if [maxVideoLength] is inferior to the
   /// total duration of the video.
-  final int sideTapSize;
+  final double sideTapSize;
 
   /// Helps defining the Trim Editor properties.
   ///
