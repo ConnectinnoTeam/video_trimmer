@@ -7,7 +7,6 @@ import 'package:flutter_native_video_trimmer/flutter_native_video_trimmer.dart';
 import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image/image.dart' as img;
-import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
@@ -274,21 +273,11 @@ class Trimmer {
     final String fileExtension =
         outputType == OutputType.gif ? '.gif' : extension(videoPath);
 
-    // Formatting Date and Time
-    String dateTime = DateFormat.yMMMd()
-        .addPattern('-')
-        .add_Hms()
-        .format(DateTime.now())
-        .toString();
-
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     String outputPath;
-    String formattedDateTime = dateTime.replaceAll(' ', '');
-
-    debugPrint("DateTime: $dateTime");
-    debugPrint("Formatted: $formattedDateTime");
 
     videoFolderName ??= "Trimmer";
-    videoFileName ??= "${videoName}_trimmed:$formattedDateTime";
+    videoFileName ??= "${videoName}_trimmed_$timestamp";
     videoFileName = videoFileName.replaceAll(' ', '_');
 
     String path = await _createFolderInAppDocDir(
